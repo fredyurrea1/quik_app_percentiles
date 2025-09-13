@@ -1,0 +1,20 @@
+<table>
+  <thead>
+    <tr>
+      <th>Analito</th>
+      <th>Unidad</th>
+      <th>Media</th>
+      <th>Desviación estándar</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for r in rows %}
+    <tr data-id="{{ r.id }}">
+      <td>{{ r.analito }}</td>
+      <td>{{ r.unidad }}</td>
+      <td><input name="media" type="number" step="any" value="{{ '' if r.media is none else r.media }}"></td>
+      <td><input name="desviacion_estandar" type="number" step="any" value="{{ '' if r.desviacion_estandar is none else r.desviacion_estandar }}"></td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>

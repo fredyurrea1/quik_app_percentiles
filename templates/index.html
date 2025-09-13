@@ -1,0 +1,95 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>QUIK Percentiles</title>
+    <link rel="stylesheet" href="/static/style.css">
+    <script>
+      async function fetchJSON(url) {
+        const r = await fetch(url);
+        return await r.json();
+      }
+      async function onProgramChange() {
+        const programa = document.getElementById('programa').value;
+        const loteSel = document.getElementById('lote');
+        const tablaDiv = document.getElementById('tabla');
+        loteSel.innerHTML = '<option value="">Seleccione...</option>';
+        tablaDiv.innerHTML = '';
+        if (!programa) return;
+        const lotes = await fetchJSON('/lotes?programa=' + encodeURIComponent(programa));
+        lotes.sort((a,b)=>a-b).forEach(l => {
+          const opt = document.createElement('option');
+          opt.value = l;
+          opt.textContent = l;
+          loteSel.appendChild(opt);
+        });
+      }
+      async function onLoteChange() {
+        const programa = document.getElementById('programa').value;
+        const lote = document.getElementById('lote').value;
+        const tablaDiv = document.getElementById('tabla');
+        if (!programa || !lote) { tablaDiv.innerHTML=''; return; }
+        const r = await fetch(`/tabla?programa=${encodeURIComponent(programa)}&lote=${encodeURIComponent(lote)}`);
+        tablaDiv.innerHTML = await r.text();
+      }
+      async function saveChanges() {
+        const rows = Array.from(document.querySelectorAll('tr[data-id]'));
+        const changes = rows.map(tr => {
+          const id = parseInt(tr.dataset.id);
+          const getVal = (name) => {
+            const v = tr.querySelector(`input[name="${name}"]`).value.trim();
+            return v === '' ? null : parseFloat(v);
+          }
+          return {
+            id,
+            p10: getVal('p10'),
+            p20: getVal('p20'),
+            p25: getVal('p25'),
+            p50: getVal('p50'),
+            p75: getVal('p75'),
+          }
+        });
+        const r = await fetch('/update', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({changes})
+        });
+        const data = await r.json();
+        const msg = document.getElementById('msg');
+        msg.textContent = `Guardado: ${data.updated} filas actualizadas.`;
+        setTimeout(()=>{ msg.textContent=''; }, 3000);
+      }
+      window.addEventListener('DOMContentLoaded', async () => {
+        // Cargar lista de programas
+        const programas = await fetchJSON('/programas');
+        const sel = document.getElementById('programa');
+        programas.sort().forEach(p => {
+          const opt = document.createElement('option');
+          opt.value = p;
+          opt.textContent = p;
+          sel.appendChild(opt);
+        });
+      });
+    </script>
+  </head>
+  <body>
+    <div class="container">
+      <h1>Aplicativo de Percentiles</h1>
+      <div class="filters">
+        <label>Programa
+          <select id="programa" onchange="onProgramChange()">
+            <option value="">Seleccione...</option>
+          </select>
+        </label>
+        <label>Lote
+          <select id="lote" onchange="onLoteChange()">
+            <option value="">Seleccione...</option>
+          </select>
+        </label>
+        <button class="primary" onclick="saveChanges()">Guardar cambios</button>
+        <span id="msg" class="muted"></span>
+      </div>
+      <div id="tabla"></div>
+    </div>
+  </body>
+</html>
